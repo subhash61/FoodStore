@@ -1,8 +1,9 @@
 // eslint-disable-next-line import/no-unresolved
-const Product = require('../model/productmodel');
+const Product = require('../model/productModel');
+const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
-exports.getAllProducts = catchAsync(async (req, res) => {
+exports.getAllProducts = catchAsync(async (req, res, next) => {
   const products = await Product.find();
   res.status(200).json({
     status: 'success',
@@ -11,8 +12,13 @@ exports.getAllProducts = catchAsync(async (req, res) => {
     },
   });
 });
-exports.getProduct = catchAsync(async (req, res) => {
-  const product = await Product.find({ _id: req.params.id });
+exports.getProduct = catchAsync(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+  console.log(product);
+  if (!product) {
+    console.log('abcd');
+    return next(new AppError('No Product found with that id', 404));
+  }
   res.status(200).json({
     status: 'success',
     data: {
@@ -32,18 +38,24 @@ exports.createProduct = catchAsync(async (req, res) => {
   });
 });
 
-exports.deleteProduct = catchAsync(async (req, res) => {
-  await Product.findByIdAndDelete(req.params.id);
+exports.deleteProduct = catchAsync(async (req, res, next) => {
+  const product = await Product.findByIdAndDelete(req.params.id);
+  if (!product) {
+    return next(new AppError('No Product found with that id', 404));
+  }
   res.status(204).json({
     status: 'sucess',
     data: null,
   });
 });
-exports.updateProduct = catchAsync(async (req, res) => {
+exports.updateProduct = catchAsync(async (req, res, next) => {
   const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   });
+  if (!updatedProduct) {
+    return next(new AppError('No Product found with that id', 404));
+  }
 
   res.status(200).json({
     status: 'sucess',
